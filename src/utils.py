@@ -22,7 +22,7 @@ def plot_signal(sparse: np.ndarray, smooth: np.ndarray) -> None:
         smooth (np.ndarray): A NumPy array representing the smooth signal.
     """
     signal = sparse + smooth
-    fig, axes = plt.subplots(1, 3, figsize=(20, 20))
+    fig, axes = plt.subplots(1, 3, figsize=(14, 4))
     for ax, img, title, max in zip(
         axes,
         [sparse, smooth, signal],
@@ -586,3 +586,90 @@ def write_to_csv(filename, data):
             ]
             writer.writerow(header)  # Write the header only if the file is empty
         writer.writerow(data)
+
+def compare3(images: list, names: list, title: str = None):
+    f = plt.figure(figsize=(17, 5))
+    # Plot the 3 images contained in images side by side, with the same colormap.
+    axes = f.subplots(1, 3, sharex=True, sharey=True)
+    divnorm = colors.CenteredNorm(
+        vcenter=0.0,
+        halfrange=max([np.abs(im).max() for im in images]),
+    )
+    for j in range(3):
+        im = axes[j].imshow(
+            images[j],
+            cmap="seismic",
+            norm=divnorm,
+            interpolation='none'
+        )
+        axes[j].set_yticks([])
+        axes[j].set_xticks([])
+        divider = make_axes_locatable(axes[j])
+        axes[j].set_title(names[j], fontsize=16)
+        plt.subplots_adjust(wspace=0, left=0, right=1)
+        if j == 2:
+            cax = divider.append_axes(position="right", size="5%", pad=0.5)
+            cbar = f.colorbar(im, cax=cax)
+            cbar.ax.tick_params(labelsize=16)
+        elif j == 0:
+            cax = divider.append_axes(position="left", size="5%", pad=0.5)
+            cax.axis("off")
+        else:
+            cax = divider.append_axes(position="left", size="2.5%", pad=0.25)
+            cax.axis("off")
+            cax = divider.append_axes(position="right", size="2.5%", pad=0.25)
+            cax.axis("off")
+
+    if title:
+        plt.suptitle(title, fontsize=16)
+
+    return f
+
+def rel_l1_err(x: np.ndarray, y: np.ndarray) -> float:
+    """
+    Calculate the relative L1 error between two signals.
+
+    Parameters:
+        x (np.ndarray): The first signal.
+        y (np.ndarray): The second signal.
+
+    Returns:
+        float: The relative L1 error between the two signals.
+    """
+    return np.linalg.norm(x - y, ord=1) / np.linalg.norm(y, ord=1)
+
+def rel_l2_err(x: np.ndarray, y: np.ndarray) -> float:
+    """
+    Calculate the relative L2 error between two signals.
+
+    Parameters:
+        x (np.ndarray): The first signal.
+        y (np.ndarray): The second signal.
+
+    Returns:
+        float: The relative L2 error between the two signals.
+    """
+    return np.linalg.norm(x - y) / np.linalg.norm(y)
+
+if __name__=="__main__":
+    N = 10
+    L = 5
+    A = np.random.rand(L, N)
+    print(np.linalg.det(A @ A.T))
+    Gminus1 = np.linalg.inv(A @ A.T)
+    U = A.T @ Gminus1 @ A
+
+    dimkerL = np.floor(0.2*N).astype(int)
+    L = np.diag(np.hstack([np.random.rand(N - dimkerL), np.zeros(dimkerL)]))
+
+    Lamb = Gminus1 @ A @ L.T @ L @ A.T
+
+    print("Direct test:\n\t", np.allclose(A.T @ Lamb, L.T @ L @ A.T))
+    print("Compose test:\n\t", np.allclose(A @ A.T @ Lamb, A @ L.T @ L @ A.T))
+
+    # new tests
+    print("Stability of ker(A)^ort")
+    for _ in range(10):
+        x = np.random.rand(N)
+        print(np.allclose(U @ L @ U @ x, L @ U @ x))
+

@@ -90,8 +90,12 @@ def compute_y(y0: np.ndarray, psnr: int) -> np.ndarray:
     Returns:
         np.ndarray: Noisy version of the input array to achieve the specified PSNR.
     """
-    y0_max = np.max(np.abs(y0))
-    mse_db = 20 * np.log10(y0_max) - psnr
-    mse = 10 ** (mse_db / 10)
-    noise = np.random.normal(0, np.sqrt(mse / 2), y0.shape)
+    # y0_max = np.max(np.abs(y0))
+    # mse_db = 20 * np.log10(y0_max) - psnr
+    # mse = 10 ** (mse_db / 10)
+    # noise = np.random.normal(0, np.sqrt(mse / 2), y0.shape)
+    import pyxu.util.complex as pxuc
+    y = pxuc.view_as_complex(y0)
+    sigma = np.abs(y).max()**2 * (10 ** (-psnr / 10)) / y.size
+    noise = np.random.normal(0, np.sqrt(sigma/2), y0.shape)
     return y0 + noise
