@@ -6,6 +6,7 @@ from pyxu.abc import LinOp
 from matplotlib.figure import Figure
 from matplotlib.axes import Axes
 
+__all__ = ["NuFFT"]
 
 class NuFFT:
     def __init__(

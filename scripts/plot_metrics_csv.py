@@ -1,11 +1,7 @@
 import matplotlib.pyplot as plt
 import os
 import pandas as pd
-import pickle
-import numpy as np
-import matplotlib.colors as colors
 
-from src.utils import plot_signal
 
 N = 128
 psnrdb = 20

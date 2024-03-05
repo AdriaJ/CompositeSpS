@@ -1,19 +1,13 @@
 import numpy as np
+import pyxu.operator as pxop
 import time
+
 from pyxu.abc import LinOp, QuadraticFunc
-from pyxu.operator import (
-    SquaredL2Norm,
-    L1Norm,
-    hstack,
-    NullFunc,
-    IdentityOp,
-    DiagonalOp,
-    Laplacian,
-)
 from pyxu.opt.solver import PGD
 from pyxu.opt.stop import MaxIter, RelError
 from src.operators import NuFFT
 
+__all__ = ["solve", "coupled_solve", "decoupled_solve", "Op_x2", "FFT_L_gram_vec"]
 
 def solve(
     y: np.ndarray,
@@ -40,9 +34,6 @@ def solve(
     Returns:
         tuple: A tuple containing two NumPy arrays - x1 and x2, which are solutions to the optimization problem.
     """
-    # lambda_max = np.linalg.norm(op.phi.adjoint(y), ord=np.inf)
-    # lambda2 *= lambda_max
-    # lambda1 *= lambda_max
 
     if coupled:
         return coupled_solve(y, op, lambda1, lambda2, laplacian, eps=eps, history=history)
@@ -77,24 +68,24 @@ def coupled_solve(
 
     print("Coupled")
 
-    l22_loss = (1 / 2) * SquaredL2Norm(dim=op.dim_out).asloss(y)
-    F = l22_loss * hstack([op.phi, op.phi])
+    l22_loss = (1 / 2) * pxop.SquaredL2Norm(dim=op.dim_out).asloss(y)
+    F = l22_loss * pxop.hstack([op.phi, op.phi])
 
     if lambda2 != 0.0:
         if laplacian:
-            l2operator = Laplacian((op.N, op.N), mode="wrap")
-            L = lambda2 / 2 * SquaredL2Norm(l2operator.shape[0]) * l2operator
+            l2operator = pxop.Laplacian((op.N, op.N), mode="wrap")
+            L = lambda2 / 2 * pxop.SquaredL2Norm(l2operator.shape[0]) * l2operator
         else:
-            L = lambda2 / 2 * SquaredL2Norm(op.dim_in)
+            L = lambda2 / 2 * pxop.SquaredL2Norm(op.dim_in)
 
-        F = F + hstack([NullFunc(op.dim_in), L])
+        F = F + pxop.hstack([pxop.NullFunc(op.dim_in), L])
     # F.diff_lipschitz = F.estimate_diff_lipschitz(method="svd")
     F.diff_lipschitz = 2 * op.phi.lipschitz ** 2
 
     if lambda1 == 0.0:
-        G = NullFunc(2 * op.dim_in)
+        G = pxop.NullFunc(2 * op.dim_in)
     else:
-        G = hstack([lambda1 * L1Norm(op.dim_in), NullFunc(op.dim_in)])
+        G = pxop.hstack([lambda1 * pxop.L1Norm(op.dim_in), pxop.NullFunc(op.dim_in)])
     pgd = PGD(f=F, g=G, verbosity=500)
     sc = MaxIter(n=10) & RelError(eps=eps)
     start = time.time()
@@ -144,9 +135,9 @@ def decoupled_solve(
     F.diff_lipschitz = .5 * op.phi.lipschitz ** 2 * Q_Linop.lipschitz
 
     if lambda1 == 0.0:
-        G = NullFunc(op.dim_in)
+        G = pxop.NullFunc(op.dim_in)
     else:
-        G = lambda1 * L1Norm(op.dim_in)
+        G = lambda1 * pxop.L1Norm(op.dim_in)
     pgd = PGD(f=F, g=G, verbosity=500)
     sc = MaxIter(n=10) & RelError(eps=eps)
     start = time.time()
@@ -179,7 +170,7 @@ def Op_x2(op, lambda2, laplacian):
     vec = np.array([op.dim_in, 1e-10, *[op.dim_in / 2] * (op.dim_out - 2)])
 
     # Does it really work ??? Should be better to not put a test here
-    # diag_op = DiagonalOp(vec)
+    # diag_op = pxop.DiagonalOp(vec)
     # random_y = np.random.rand(op.dim_out)
     # cogram_id = np.allclose(op.phi.cogram().apply(random_y), diag_op.apply(random_y))
 
@@ -189,25 +180,25 @@ def Op_x2(op, lambda2, laplacian):
         print("Co-Gram Identity")
         if laplacian:
             B_vec = (1 / vec) * FFT_L_gram_vec(op)  # F, which is diagonal
-            Q_Linop = DiagonalOp(lambda2 * B_vec / (vec + lambda2 * B_vec))
+            Q_Linop = pxop.DiagonalOp(lambda2 * B_vec / (vec + lambda2 * B_vec))
         else:
             vec = 1 / (
                 np.array([op.dim_in, 1e-12, *[op.dim_in / 2] * (op.dim_out - 2)])
                 + lambda2 * np.ones(op.dim_out)
             )
-            Q_Linop = DiagonalOp(lambda2 * vec)
+            Q_Linop = pxop.DiagonalOp(lambda2 * vec)
 
     else:  # Co-Gram operator ≠ Identity
         #  Force explicit computation of the operator so that it does not get calculated twice
         if laplacian:
-            l2operator = Laplacian((op.N, op.N), mode="wrap")
+            l2operator = pxop.Laplacian((op.N, op.N), mode="wrap")
             B = op.phi.cogram().dagger(damp=0) * op.phi * l2operator.gram() * op.phi.T
             Q_Linop = lambda2 * LinOp.from_array(
                 (B * (op.phi.cogram() + lambda2 * B).dagger(damp=0)).asarray()
             )
         else:
             Q_Linop = LinOp.from_array( lambda2 *
-                (op.phi.cogram() + lambda2 * IdentityOp(op.dim_out))
+                (op.phi.cogram() + lambda2 * pxop.IdentityOp(op.dim_out))
                 .dagger(damp=0)
                 .asarray()
             )
@@ -215,7 +206,7 @@ def Op_x2(op, lambda2, laplacian):
     def compute_x2(x1, y):
         if cogram_id:  # Co-Gram operator = Identity
             if laplacian:
-                x2 = (-op.phi.T * DiagonalOp(1 / (vec + lambda2 * B_vec))).apply(
+                x2 = (-op.phi.T * pxop.DiagonalOp(1 / (vec + lambda2 * B_vec))).apply(
                     op(x1) - y
                 )
             else:
@@ -270,7 +261,7 @@ if __name__=="__main__":
 
     lambda2 = .1 * N ** 2  # Using that svd(A) = N
     start = time.time()
-    lap = Laplacian((N, N), mode="wrap")
+    lap = pxop.Laplacian((N, N), mode="wrap")
     lap_time = time.time() - start
     print(f"Instantiation time of the Laplacian: {lap_time}")
     start = time.time()
@@ -303,15 +294,15 @@ if __name__=="__main__":
 
     # Coupled case
     print("Coupled scenario:")
-    l22_loss = (1 / 2) * SquaredL2Norm(dim=op.dim_out).asloss(y)
-    F = l22_loss * hstack([op.phi, op.phi])
-    L = lambda2 / 2 * SquaredL2Norm(lap.shape[0]) * lap
-    # F = F + hstack([NullFunc(op.dim_in), L])
+    l22_loss = (1 / 2) * pxop.SquaredL2Norm(dim=op.dim_out).asloss(y)
+    F = l22_loss * pxop.hstack([op.phi, op.phi])
+    L = lambda2 / 2 * pxop.SquaredL2Norm(lap.shape[0]) * lap
+    # F = F + pxop.hstack([pxop.NullFunc(op.dim_in), L])
     start = time.time()
     df_lips = F.estimate_diff_lipschitz(method="svd")
     diff_lips_time = time.time() - start
-    print(f"\tAuto lip constant of the stack: {hstack([op.phi, op.phi]).lipschitz:.3e}")
-    print(f"\tComputed lip constant of the stack: {hstack([op.phi, op.phi]).estimate_lipschitz(method='svd'):.3e}")  # np.sqrt(2) * N
+    print(f"\tAuto lip constant of the stack: {pxop.hstack([op.phi, op.phi]).lipschitz:.3e}")
+    print(f"\tComputed lip constant of the stack: {pxop.hstack([op.phi, op.phi]).estimate_lipschitz(method='svd'):.3e}")  # np.sqrt(2) * N
 
     print(f"\tAuto calculated value at instantiation: {F.diff_lipschitz:.3e}")  # already good
     print(f"\tProduct of the lipschitz: {op.phi.lipschitz**2 * 2:.3e}")  # 2 * N**2

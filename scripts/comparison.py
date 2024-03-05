@@ -1,5 +1,8 @@
-import matplotlib.pyplot as plt
+import time
 import numpy as np
+import pyxu.operator as pxop
+import matplotlib.pyplot as plt
+from matplotlib import colors
 
 from src import *
 
@@ -53,26 +56,22 @@ if __name__ == "__main__":
     y0 = op(x0)
     y = compute_y(y0, psnr)
 
-    ## retro compute psnr
-    import pyxu.util.complex as pxuc
-    noise = pxuc.view_as_complex(y - y0)
-    20 * np.log10(np.abs(pxuc.view_as_complex(y0)).max()/np.linalg.norm(noise, 2))
-    #
-    # print(np.linalg.norm(y - y0))
+    # ## retro compute psnr
+    # import pyxu.util.complex as pxuc
+    # noise = pxuc.view_as_complex(y - y0)
+    # 20 * np.log10(np.abs(pxuc.view_as_complex(y0)).max()/np.linalg.norm(noise, 2))
+
 
     # Regularization
     lambda2 = lambda2f * N ** 2  # Using that svd(A) = N
-    lap = Laplacian((N, N), mode="wrap")
+    lap = pxop.Laplacian((N, N), mode="wrap")
     lap.lipschitz = 8  # lap.estimate_lipschitz(method='svd')
     lambda2 /= lap.lipschitz ** 2
-    # lambda1 = lambda1f * np.abs(op.phi.adjoint(y)).max()
-    # print(lambda1/lambda2)
 
-    # Lambda_r = lambda1\lambda2
-    # Compute lambda_r max
+
     vec = np.array([op.dim_in, 1e-10, *[op.dim_in / 2] * (op.dim_out - 2)])
     B_vec = (1 / vec) * FFT_L_gram_vec(op)  # Depends on the samples of the DFT
-    Ml2 = DiagonalOp(lambda2 * B_vec / (vec + lambda2 * B_vec))
+    Ml2 = pxop.DiagonalOp(lambda2 * B_vec / (vec + lambda2 * B_vec))
     lambda1_max = np.abs(op.phi.adjoint(Ml2.adjoint(y))).max()
 
     lambda1 = lambda1f * lambda1_max

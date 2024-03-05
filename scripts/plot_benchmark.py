@@ -2,8 +2,6 @@ import os
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from src import *
-
 plt.rc('text', usetex=False)
 # plt.rc('text.latex', unicode = False)
 plt.rc('svg', fonttype='none')

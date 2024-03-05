@@ -1,7 +1,12 @@
-from src import *
 import os
+import time
 import pickle
+import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
+import pyxu.operator as pxop
+
+from src import *
 
 ## Parameters
 N = 128
@@ -49,7 +54,7 @@ if __name__ == "__main__":
     vec = np.array([op.dim_in, 1e-10, *[op.dim_in / 2] * (op.dim_out - 2)])
     B_vec = (1 / vec) * FFT_L_gram_vec(op)  # Depends on the samples of the DFT
 
-    lap = Laplacian((N, N), mode="wrap")
+    lap = pxop.Laplacian((N, N), mode="wrap")
     lap.lipschitz = lap.estimate_lipschitz(method='svd')
 
     data_fidelity = lambda x1, x2: .5 * np.sum((op(x1 + x2) - y) ** 2)
@@ -89,7 +94,7 @@ if __name__ == "__main__":
 
         lambda2 = l2f * N ** 2  # Using that svd(A) = N
         lambda2 /= lap.lipschitz ** 2
-        Ml2 = DiagonalOp(lambda2 * B_vec / (vec + lambda2 * B_vec))
+        Ml2 = pxop.DiagonalOp(lambda2 * B_vec / (vec + lambda2 * B_vec))
         lambda1_max = np.abs(op.phi.adjoint(Ml2.adjoint(y))).max()
 
         for l1f in lambda1f:

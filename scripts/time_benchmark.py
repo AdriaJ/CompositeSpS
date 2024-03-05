@@ -1,6 +1,8 @@
 import os
 import time
+import numpy as np
 import pandas as pd
+import pyxu.operator as pxop
 from src import *
 
 
@@ -26,14 +28,14 @@ if __name__ == "__main__":
 
         # Setting of the regularization parameter lambda 2
         lambda2 = lambda2f * N ** 2  # Using that svd(A) = N
-        lap = Laplacian((N, N), mode="wrap")
+        lap = pxop.Laplacian((N, N), mode="wrap")
         lap.lipschitz = 8.  # lap.estimate_lipschitz(method='svd')
         lambda2 /= lap.lipschitz ** 2
 
         # For lambda 1
         vec = np.array([op.dim_in, 1e-10, *[op.dim_in / 2] * (op.dim_out - 2)])
         B_vec = (1 / vec) * FFT_L_gram_vec(op)  # Depends on the samples of the DFT
-        Ml2 = DiagonalOp(lambda2 * B_vec / (vec + lambda2 * B_vec))
+        Ml2 = pxop.DiagonalOp(lambda2 * B_vec / (vec + lambda2 * B_vec))
 
         rep_t = []
         rep_s = []

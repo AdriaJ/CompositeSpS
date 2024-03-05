@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.sparse import rand
 
+__all__ = ["compute_sparse", "compute_smooth", "compute_y"]
 
 def compute_sparse(
     N: int, values_range: tuple, density: float, seed: int = None
