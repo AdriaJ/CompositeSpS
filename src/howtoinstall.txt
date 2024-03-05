@@ -1,0 +1,6 @@
+conda create -n compsps python=3.10
+conda activate compsps
+conda install numpy matplotlib
+pip install finufft
+pip install pyxu
+conda install jupyter
