@@ -26,7 +26,7 @@ than the coupled method.
 Installation
 ===========
 
-Instructions are provided in the `src/howtoinstall.txt` file.
+Instructions are provided in the ``src/howtoinstall.txt`` file.
 
 .. code-block:: bash
 
@@ -42,11 +42,11 @@ Instructions are provided in the `src/howtoinstall.txt` file.
 Description of the files
 ========================
 
-The folder `src/` contains the code to simulate the optimization problem, including the simulation of the
+The folder ``src/`` contains the code to simulate the optimization problem, including the simulation of the
 input composite signal and the sampling operator, as well as the numerical solvers, for both the coupled
 and decoupled methods.
 
-The folder `scripts/` provides the codes to reproduce the results displayed in the article, as well as other
+The folder ``scripts/`` provides the codes to reproduce the results displayed in the article, as well as other
 to experiment with the decoupled approach and play with the reconstruction parameters. Additionally, scripts
 are provided to plot the results in a handy and insightful manner.
 
