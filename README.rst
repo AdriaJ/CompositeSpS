@@ -9,7 +9,10 @@ The optimization problem considered can be stated as follows:
 
 .. math::
 
-    \underset{\x_1, \x_2 \in \R^N} {\arg\min} \frac{1}{2} & \lVert\y - \mathbf{A}(\x_1 + \x_2)\rVert_2^2 + \lambda_1 \lVert\L_1\x_1\rVert_1 + \frac{\lambda_2}{2} \lVert\L_2\x_2\rVert_2^2.
+    {\arg\min}\ \frac{1}{2} & ||\mathbf{y} - \mathbf{A}(\mathbf{x}_1 + \mathbf{x}_2)||_2^2 + \lambda_1 ||\mathbf{L}_1\mathbf{x}_1||_1 + \frac{\lambda_2}{2} ||\mathbf{L}_2\mathbf{x}_2||_2^2,
+
+where the optimization variables are :math:`{\mathbf{x}_1, \mathbf{x}_2 \in \mathbb{R}^N}`.
+
 
 The code implements:
 
