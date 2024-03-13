@@ -36,7 +36,7 @@ Instructions are provided in the ``src/howtoinstall.txt`` file.
    $ conda activate compsps
    $ conda install numpy matplotlib
    $ pip install finufft
-   $ pip install pyxu
+   $ pip install pyxu==1.2.0
    $ conda install jupyter
 
 Description of the files
