@@ -24,11 +24,11 @@ significant time speedups, while providing a reconstruction of similar or higher
 than the coupled method.
 
 Installation
-===========
+============
 
 Instructions are provided in the ``src/howtoinstall.txt`` file.
 
-.. code-block:: bash
+.. code-block:: console
 
    $ git clone git@github.com:AdriaJ/CompositeSpS.git
    $ cd CompositeSpS
