@@ -27,12 +27,20 @@ psnrdb = 20
 seed = 21
 
 
-def compare2(images, names: list = None, title: str = None):
+def compare2(images, names: list = None, title: str = None, remove_last_tick: bool = False):
+    def formatter(x, pos):
+        if x % 1 == 0:
+            return f"{int(x):d}"
+        else:
+            return ""
     f = plt.figure(figsize=(12, 5))
     axes = f.subplots(1, 2, sharex=True, sharey=True)
+    vmax = max([np.abs(im).max() for im in images])
+    if remove_last_tick:
+        vmax += 0.1
     divnorm = colors.CenteredNorm(
         vcenter=0.0,
-        halfrange=max([np.abs(im).max() for im in images]),
+        halfrange=vmax,
     )
     for j in range(2):
         im = axes[j].imshow(
@@ -49,9 +57,8 @@ def compare2(images, names: list = None, title: str = None):
         plt.subplots_adjust(wspace=0, left=0, right=1)
         if j == 1:
             cax = divider.append_axes(position="right", size="5%", pad=0.5)
-            cbar = f.colorbar(im, cax=cax, location='right')
+            cbar = f.colorbar(im, cax=cax, location='right', format=formatter)
             cbar.ax.tick_params(labelsize=20)
-            # print(cbar.ax.get_tick_params())
         elif j == 0:
             cax = divider.append_axes(position="left", size="5%", pad=0.5)
             cax.axis("off")
@@ -140,7 +147,7 @@ if __name__ == "__main__":
 
     f = compare2([sparse_signal, x1_decoupled.reshape((N, N))])
     f.savefig(os.path.join(savepath, 'sparse_comp.pdf'), dpi=300)
-    f = compare2([smooth_signal, x2_decoupled.reshape((N, N))])
+    f = compare2([smooth_signal, x2_decoupled.reshape((N, N))], remove_last_tick=True)
     f.savefig(os.path.join(savepath, 'smooth_comp.pdf'), dpi=300)
     f = compare2([signal, (x1_decoupled + x2_decoupled).reshape((N, N))])
     f.savefig(os.path.join(savepath, 'total_reconstruction.pdf'), dpi=300)
